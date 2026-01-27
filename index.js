@@ -6,6 +6,7 @@ app.use(express.json());
 const userApiRoutes = require("./routes/users(rest)");
 const userRoutes = require("./routes/users");
 const connectDB = require("./connection");
+const { sendAllUsers } = require("./controllers/user");
 const { serverLogs } = require("./middlewares");
 
 app.use(serverLogs("server.log"));
@@ -30,9 +31,7 @@ const requireDb = async (req, res, next) => {
 };
 
 //routes
-app.route("/").get((req, res) => {
-  res.send("Hello World!");
-});
+app.get("/", requireDb, sendAllUsers);
 app.use("/users", requireDb, userRoutes);
 app.use("/api/users", requireDb, userApiRoutes);
 
