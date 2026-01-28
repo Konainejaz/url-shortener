@@ -1,52 +1,90 @@
 require("dotenv").config();
+const path = require("path");
 const express = require("express");
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const bcrypt = require("bcrypt");
+const connectDB = require("./src/config/db");
+const { logRequests } = require("./src/middlewares/logger.middleware");
+
+const urlRoutes = require("./src/routes/url.routes");
+const staticRoutes = require("./src/routes/static.routes");
+const adminRoutes = require("./src/routes/admin.routes");
+const userRoutes = require("./src/routes/user.routes");
+const { handleRedirect } = require("./src/controllers/url.controller");
+const Admin = require("./src/models/admin.model");
+
 const app = express();
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-const userApiRoutes = require("./routes/users(rest)");
-const userRoutes = require("./routes/users");
-const connectDB = require("./connection");
-const { sendAllUsers } = require("./controllers/user");
-const { serverLogs } = require("./middlewares");
+const PORT = process.env.PORT || 8000;
 
-app.use(serverLogs("server.log"));
+const isAtlasMongoUri = (uri) => typeof uri === "string" && uri.includes("mongodb.net");
 
-const requireDb = async (req, res, next) => {
-  if (!process.env.MONGODB_URI) {
-    if (req.path.startsWith("/api/")) {
-      return res.status(500).json({ error: "Missing MONGODB_URI" });
+const mongoUri = process.env.MONGODB_URI;
+const shouldConnectToDb = process.env.SKIP_DB_CONNECT !== "1";
+if (shouldConnectToDb) {
+  if (!mongoUri) {
+    throw new Error("MONGODB_URI environment variable is required");
+  }
+  if (!isAtlasMongoUri(mongoUri)) {
+    throw new Error("MONGODB_URI must be a MongoDB Atlas connection string (mongodb.net)");
+  }
+}
+
+if (shouldConnectToDb) {
+  connectDB(mongoUri).then(async () => {
+    const defaultAdminUsername = process.env.ADMIN_USERNAME || "admin";
+    const defaultAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const adminExists = await Admin.findOne({ username: defaultAdminUsername });
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash(defaultAdminPassword, 10);
+      await Admin.create({ username: defaultAdminUsername, password: hashedPassword });
+      console.log(`Default admin created: ${defaultAdminUsername}`);
     }
-    return res
-      .status(500)
-      .send(
-        "Missing MONGODB_URI. Set it in your environment (or Vercel env vars) to use /users and /api/users.",
-      );
-  }
-  try {
-    await connectDB(process.env.MONGODB_URI);
-    next();
-  } catch (err) {
-    next(err);
-  }
+  });
+}
+
+// View Engine Setup
+app.set("view engine", "ejs");
+app.set("views", path.resolve("./src/views"));
+if (process.env.VERCEL) {
+  app.set("trust proxy", 1);
+}
+
+// Middlewares
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+const sessionOptions = {
+  secret: process.env.SESSION_SECRET || "url-shortener-dev-secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: !!process.env.VERCEL,
+  },
 };
 
-//routes
-app.get("/", requireDb, sendAllUsers);
-app.use("/users", requireDb, userRoutes);
-app.use("/api/users", requireDb, userApiRoutes);
+if (shouldConnectToDb) {
+  sessionOptions.store = (MongoStore.create || MongoStore.default.create)({
+    mongoUrl: mongoUri,
+    collectionName: "sessions",
+    ttl: 24 * 60 * 60,
+  });
+}
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  if (req.path.startsWith("/api/")) {
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-  res.status(500).send("Internal Server Error");
-});
+app.use(session(sessionOptions));
+app.use(logRequests("server.log"));
 
-const port = process.env.PORT || 8000;
+// Routes
+app.use("/", staticRoutes);
+app.use("/", userRoutes);
+app.use("/url", urlRoutes);
+app.use("/admin", adminRoutes);
+app.get("/:shortID", handleRedirect);
+
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server is running`);
+  app.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}`);
   });
 }
 

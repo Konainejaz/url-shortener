@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - <%= url.shortID %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/dashboard" class="flex items-center space-x-2">
+                        <div class="bg-blue-600 p-2 rounded-lg">
+                            <i class="fas fa-link text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Shorty</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard" class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Analytics Header -->
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="flex-1 min-w-0">
+                <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">
+                    Analytics for <span class="text-blue-600 font-mono"><%= url.shortID %></span>
+                </h2>
+                <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                    <div class="mt-2 flex items-center text-sm text-slate-500">
+                        <i class="fas fa-external-link-alt mr-1.5 text-slate-400"></i>
+                        <a href="<%= url.originalUrl %>" target="_blank" class="hover:text-blue-600 truncate max-w-xs md:max-w-md"><%= url.originalUrl %></a>
+                    </div>
+                    <div class="mt-2 flex items-center text-sm text-slate-500">
+                        <i class="fas fa-calendar-alt mr-1.5 text-slate-400"></i>
+                        Created <%= new Date(url.createdAt).toLocaleDateString() %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-xl border border-slate-200 p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                        <i class="fas fa-mouse-pointer text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-5">
+                        <dt class="text-sm font-medium text-slate-500 truncate">Total Clicks</dt>
+                        <dd class="text-2xl font-bold text-slate-900"><%= url.visitHistory.length %></dd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-xl border border-slate-200 p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                        <i class="fas fa-globe text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-5">
+                        <dt class="text-sm font-medium text-slate-500 truncate">Dest. Host</dt>
+                        <dd class="text-lg font-bold text-slate-900 truncate">
+                            <% try { %>
+                                <%= new URL(url.originalUrl).hostname %>
+                            <% } catch(e) { %>
+                                Invalid
+                            <% } %>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-xl border border-slate-200 p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                        <i class="fas fa-clock text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="ml-5">
+                        <dt class="text-sm font-medium text-slate-500 truncate">Last Visit</dt>
+                        <dd class="text-sm font-bold text-slate-900">
+                            <%= url.visitHistory.length > 0 ? new Date(url.visitHistory[url.visitHistory.length-1].timestamp).toLocaleDateString() : 'N/A' %>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-xl border border-slate-200 p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-amber-100 rounded-lg p-3">
+                        <i class="fas fa-bolt text-amber-600 text-xl"></i>
+                    </div>
+                    <div class="ml-5">
+                        <dt class="text-sm font-medium text-slate-500 truncate">Avg Clicks/Day</dt>
+                        <dd class="text-2xl font-bold text-slate-900">
+                            <% 
+                                const diffDays = Math.max(1, Math.ceil((new Date() - new Date(url.createdAt)) / (1000 * 60 * 60 * 24)));
+                                const avg = (url.visitHistory.length / diffDays).toFixed(1);
+                            %>
+                            <%= avg %>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
+            <div class="bg-white shadow rounded-xl border border-slate-200 p-6">
+                <h3 class="text-lg font-bold text-slate-900 mb-6 flex items-center">
+                    <i class="fas fa-chart-line mr-2 text-blue-600"></i> Clicks Over Time
+                </h3>
+                <div class="h-80 w-full">
+                    <canvas id="clicksChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visit Log -->
+        <div class="bg-white shadow rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <h3 class="text-lg leading-6 font-bold text-slate-900">
+                    <i class="fas fa-history mr-2 text-blue-600"></i> Recent Visits
+                </h3>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <% if (url.visitHistory.length > 0) { %>
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Time</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Device / Browser Info</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            <% url.visitHistory.slice().reverse().slice(0, 50).forEach((visit) => { %>
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-slate-900"><%= new Date(visit.timestamp).toLocaleString() %></div>
+                                        <div class="text-xs text-slate-400"><%= Math.floor((new Date() - new Date(visit.timestamp)) / 60000) %> mins ago</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-xs text-slate-600 font-mono bg-slate-50 p-2 rounded border border-slate-100 truncate max-w-xl" title="<%= visit.userAgent %>">
+                                            <%= visit.userAgent %>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <div class="px-6 py-12 text-center text-slate-500">
+                        <i class="fas fa-info-circle text-4xl mb-4 text-slate-300"></i>
+                        <p>No visit data available yet.</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Prepare data for Chart.js
+        const visitHistory = <%- JSON.stringify(url.visitHistory) %>;
+        
+        // Group by date
+        const clicksByDate = {};
+        visitHistory.forEach(visit => {
+            const date = new Date(visit.timestamp).toLocaleDateString();
+            clicksByDate[date] = (clicksByDate[date] || 0) + 1;
+        });
+
+        const labels = Object.keys(clicksByDate).slice(-7); // Last 7 days with data
+        const data = labels.map(label => clicksByDate[label]);
+
+        const ctx = document.getElementById('clicksChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of Clicks',
+                    data: data,
+                    borderColor: 'rgb(37, 99, 235)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgb(37, 99, 235)',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        padding: 12,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#1e293b',
+                        bodyColor: '#1e293b',
+                        borderColor: '#e2e8f0',
+                        borderWidth: 1,
+                        titleFont: { weight: 'bold' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f1f5f9'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Shorty</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/dashboard" class="flex items-center space-x-2">
+                        <div class="bg-blue-600 p-2 rounded-lg">
+                            <i class="fas fa-link text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Shorty</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard" class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 transition-all">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-white">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-4 rounded-full backdrop-blur-sm">
+                        <i class="fas fa-user-cog text-4xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold">Account Settings</h1>
+                        <p class="text-blue-100 mt-1">Manage your personal information and security</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <% if (success) { %>
+                    <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 flex items-center">
+                        <i class="fas fa-check-circle mr-3"></i>
+                        <%= success %>
+                    </div>
+                <% } %>
+
+                <% if (error) { %>
+                    <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-3"></i>
+                        <%= error %>
+                    </div>
+                <% } %>
+
+                <form action="/profile" method="POST" class="space-y-6">
+                    <div>
+                        <label for="name" class="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user text-slate-400"></i>
+                            </div>
+                            <input type="text" name="name" id="name" value="<%= user.name %>" required
+                                class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 transition-all"
+                                placeholder="Your Name">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-envelope text-slate-400"></i>
+                            </div>
+                            <input type="email" id="email" value="<%= user.email %>" disabled
+                                class="block w-full pl-10 pr-3 py-3 border border-slate-200 bg-slate-50 rounded-xl text-slate-500 cursor-not-allowed"
+                                placeholder="your@email.com">
+                        </div>
+                        <p class="mt-2 text-xs text-slate-400 italic">Email address cannot be changed</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100">
+                        <label for="password" class="block text-sm font-bold text-slate-700 mb-2">New Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-slate-400"></i>
+                            </div>
+                            <input type="password" name="password" id="password"
+                                class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 transition-all"
+                                placeholder="Leave blank to keep current password">
+                        </div>
+                        <p class="mt-2 text-xs text-slate-500">Security tip: Use at least 8 characters with numbers and symbols</p>
+                    </div>
+
+                    <div class="pt-6">
+                        <button type="submit" 
+                            class="w-full inline-flex items-center justify-center px-6 py-4 border border-transparent text-base font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:-translate-y-0.5">
+                            <i class="fas fa-save mr-2"></i> Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-sm text-slate-400">
+                &copy; 2026 Shorty. Secure and Private URL Management.
+            </p>
+        </div>
+    </main>
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            <% if (success) { %>
+                Toast.fire({
+                    icon: 'success',
+                    title: '<%= success %>'
+                });
+            <% } %>
+
+            <% if (error) { %>
+                Toast.fire({
+                    icon: 'error',
+                    title: '<%= error %>'
+                });
+            <% } %>
+        });
+    </script>
+</body>
+</html>

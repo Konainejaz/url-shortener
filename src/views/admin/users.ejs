@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Admin Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-slate-900 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/admin/dashboard" class="flex items-center space-x-3 group">
+                        <div class="bg-blue-600 p-2 rounded-lg group-hover:bg-blue-500 transition-colors">
+                            <i class="fas fa-shield-alt text-xl"></i>
+                        </div>
+                        <span class="font-bold text-xl tracking-tight">Admin Console</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/admin/dashboard" class="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-chart-line mr-1"></i> Dashboard
+                    </a>
+                    <a href="/admin/logout" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-lg text-sm font-bold border border-red-500/20 transition-all">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">User Management</h1>
+                <p class="text-slate-500 mt-1">Manage registered users and their account settings.</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="bg-white border border-slate-200 rounded-lg px-4 py-2 shadow-sm">
+                    <span class="text-sm text-slate-500">Total Users:</span>
+                    <span class="ml-2 font-bold text-slate-900"><%= locals.users ? users.length : 0 %></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <% if (locals.users && users.length > 0) { %>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200">
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">S. No</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User Information</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Account Status</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Joined Date</th>
+                                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <% users.forEach((user, index) => { %>
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <span class="text-sm font-medium text-slate-400">#<%= index + 1 %></span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                                <%= user.name.charAt(0).toUpperCase() %>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-bold text-slate-900"><%= user.name %></div>
+                                                <div class="text-sm text-slate-500"><%= user.email %></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        <%= new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) %>
+                                    </td>
+                                    <td class="px-6 py-4 text-right space-x-2">
+                                        <a href="/admin/users/edit/<%= user._id %>" 
+                                           class="inline-flex items-center px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                                            <i class="fas fa-user-edit mr-1.5 text-blue-500"></i> Edit
+                                        </a>
+                                        <form id="delete-form-<%= user._id %>" action="/admin/users/delete/<%= user._id %>" method="POST" class="inline">
+                                            <button type="button" onclick="confirmUserDelete('<%= user._id %>', '<%= user.name %>')"
+                                                    class="inline-flex items-center px-3 py-1.5 border border-red-100 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-all shadow-sm">
+                                                <i class="fas fa-trash-alt mr-1.5"></i> Delete
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <div class="p-12 text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 text-slate-400 rounded-full mb-4">
+                            <i class="fas fa-users-slash text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">No users found</h3>
+                        <p class="text-slate-500 mt-1">There are currently no registered users in the system.</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-slate-200 mt-8">
+        <p class="text-center text-sm text-slate-500">
+            © 2026 URL Shortener Admin Console. All rights reserved.
+        </p>
+    </footer>
+
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const successMsg = urlParams.get('success');
+            const errorMsg = urlParams.get('error');
+
+            if (successMsg) {
+                Toast.fire({
+                    icon: 'success',
+                    title: successMsg
+                });
+            }
+
+            if (errorMsg) {
+                Toast.fire({
+                    icon: 'error',
+                    title: errorMsg
+                });
+            }
+        });
+
+        function confirmUserDelete(userId, userName) {
+            Swal.fire({
+                title: `Delete ${userName}?`,
+                text: "All URLs created by this user will also be deleted. This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete user!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(`delete-form-${userId}`).submit();
+                }
+            })
+        }
+    </script>
+</body>
+</html>
