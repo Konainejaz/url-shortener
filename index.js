@@ -1,4 +1,6 @@
-require("dotenv").config();
+if (!process.env.VERCEL) {
+  require("dotenv").config();
+}
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
@@ -20,28 +22,40 @@ const PORT = process.env.PORT || 8000;
 const isAtlasMongoUri = (uri) => typeof uri === "string" && uri.includes("mongodb.net");
 
 const mongoUri = process.env.MONGODB_URI;
+const isVercel = !!process.env.VERCEL;
 const shouldConnectToDb = process.env.SKIP_DB_CONNECT !== "1";
+const sessionSecret = process.env.SESSION_SECRET || (isVercel ? undefined : "url-shortener-dev-secret");
+
+let configError = null;
 if (shouldConnectToDb) {
   if (!mongoUri) {
-    throw new Error("MONGODB_URI environment variable is required");
-  }
-  if (!isAtlasMongoUri(mongoUri)) {
-    throw new Error("MONGODB_URI must be a MongoDB Atlas connection string (mongodb.net)");
+    configError = new Error("MONGODB_URI environment variable is required");
+  } else if (!isAtlasMongoUri(mongoUri)) {
+    configError = new Error("MONGODB_URI must be a MongoDB Atlas connection string (mongodb.net)");
+  } else if (!sessionSecret) {
+    configError = new Error("SESSION_SECRET environment variable is required");
   }
 }
 
-if (shouldConnectToDb) {
-  connectDB(mongoUri).then(async () => {
-    const defaultAdminUsername = process.env.ADMIN_USERNAME || "admin";
-    const defaultAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
-    const adminExists = await Admin.findOne({ username: defaultAdminUsername });
-    if (!adminExists) {
-      const hashedPassword = await bcrypt.hash(defaultAdminPassword, 10);
-      await Admin.create({ username: defaultAdminUsername, password: hashedPassword });
-      console.log(`Default admin created: ${defaultAdminUsername}`);
-    }
-  });
-}
+let initPromise = null;
+const ensureInitialized = async () => {
+  if (!shouldConnectToDb || configError) return;
+  if (!initPromise) {
+    initPromise = connectDB(mongoUri).then(async () => {
+      const defaultAdminUsername = process.env.ADMIN_USERNAME || "admin";
+      const defaultAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
+      const adminExists = await Admin.findOne({ username: defaultAdminUsername });
+      if (!adminExists) {
+        const hashedPassword = await bcrypt.hash(defaultAdminPassword, 10);
+        await Admin.create({ username: defaultAdminUsername, password: hashedPassword });
+        console.log(`Default admin created: ${defaultAdminUsername}`);
+      }
+    }).catch((err) => {
+      configError = err;
+    });
+  }
+  await initPromise;
+};
 
 // View Engine Setup
 app.set("view engine", "ejs");
@@ -53,8 +67,21 @@ if (process.env.VERCEL) {
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+app.use(async (req, res, next) => {
+  if (configError) {
+    return res.status(500).send(`Server misconfigured: ${configError.message}`);
+  }
+  if (!shouldConnectToDb) return next();
+  await ensureInitialized();
+  if (configError) {
+    return res.status(500).send(`Server failed to initialize: ${configError.message}`);
+  }
+  return next();
+});
+
 const sessionOptions = {
-  secret: process.env.SESSION_SECRET || "url-shortener-dev-secret",
+  secret: sessionSecret || "url-shortener-dev-secret",
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -64,7 +91,7 @@ const sessionOptions = {
   },
 };
 
-if (shouldConnectToDb) {
+if (shouldConnectToDb && !configError) {
   sessionOptions.store = (MongoStore.create || MongoStore.default.create)({
     mongoUrl: mongoUri,
     collectionName: "sessions",
