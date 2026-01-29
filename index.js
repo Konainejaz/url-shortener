@@ -5,7 +5,7 @@ const path = require("path");
 const express = require("express");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const connectDB = require("./src/config/db");
 const { logRequests } = require("./src/middlewares/logger.middleware");
 
@@ -92,11 +92,15 @@ const sessionOptions = {
 };
 
 if (shouldConnectToDb && !configError) {
-  sessionOptions.store = (MongoStore.create || MongoStore.default.create)({
+  const store = (MongoStore.create || MongoStore.default.create)({
     mongoUrl: mongoUri,
     collectionName: "sessions",
     ttl: 24 * 60 * 60,
   });
+  store.on("error", (err) => {
+    configError = err;
+  });
+  sessionOptions.store = store;
 }
 
 app.use(session(sessionOptions));
@@ -107,6 +111,7 @@ app.use("/", staticRoutes);
 app.use("/", userRoutes);
 app.use("/url", urlRoutes);
 app.use("/admin", adminRoutes);
+app.get("/favicon.ico", (req, res) => res.status(204).end());
 app.get("/:shortID", handleRedirect);
 
 if (require.main === module) {
@@ -114,5 +119,11 @@ if (require.main === module) {
     console.log(`Server is running at http://localhost:${PORT}`);
   });
 }
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (res.headersSent) return next(err);
+  return res.status(500).send("Internal Server Error");
+});
 
 module.exports = app;
