@@ -144,12 +144,12 @@
                                 <div class="ml-3">
                                     <p class="text-sm text-green-700 font-medium">URL Shortened Successfully!</p>
                                     <div class="mt-1 flex items-center space-x-2">
-                                        <span class="text-sm font-bold text-slate-900">http://localhost:8000/<%= id %></span>
-                                        <button onclick="copyToClipboard('http://localhost:8000/<%= id %>')" class="text-blue-600 hover:text-blue-800 text-xs font-bold underline">Copy Link</button>
+                                        <span class="text-sm font-bold text-slate-900"><%= baseUrl %>/<%= id %></span>
+                                        <button onclick="copyToClipboard('<%= baseUrl %>/<%= id %>')" class="text-blue-600 hover:text-blue-800 text-xs font-bold underline">Copy Link</button>
                                     </div>
                                 </div>
                             </div>
-                            <a href="http://localhost:8000/<%= id %>" target="_blank" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700 transition-colors">Visit</a>
+                            <a href="<%= baseUrl %>/<%= id %>" target="_blank" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700 transition-colors">Visit</a>
                         </div>
                     </div>
                 <% } %>
@@ -218,7 +218,7 @@
                                         <div class="flex flex-col">
                                             <span class="text-sm font-bold text-blue-600 font-mono"><%= url.shortID %></span>
                                             <div class="flex items-center space-x-2 mt-1">
-                                                <button onclick="copyToClipboard('http://localhost:8000/<%= url.shortID %>')" class="text-xs text-slate-400 hover:text-blue-600 transition-colors" title="Copy link">
+                                                <button onclick="copyToClipboard('<%= baseUrl %>/<%= url.shortID %>')" class="text-xs text-slate-400 hover:text-blue-600 transition-colors" title="Copy link">
                                                     <i class="fas fa-copy"></i> Copy
                                                 </button>
                                                 <a href="http://localhost:8000/<%= url.shortID %>" target="_blank" class="text-xs text-slate-400 hover:text-green-600 transition-colors" title="Visit link">

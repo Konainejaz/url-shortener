@@ -68,6 +68,11 @@ if (process.env.VERCEL) {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.use((req, res, next) => {
+  res.locals.baseUrl = `${req.protocol}://${req.get("host")}`;
+  next();
+});
+
 app.use(async (req, res, next) => {
   if (configError) {
     return res.status(500).send(`Server misconfigured: ${configError.message}`);
